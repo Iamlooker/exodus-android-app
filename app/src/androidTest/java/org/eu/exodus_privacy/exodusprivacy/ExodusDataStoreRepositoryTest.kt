@@ -9,9 +9,9 @@ import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import org.eu.exodus_privacy.exodusprivacy.manager.storage.DataStoreName
-import org.eu.exodus_privacy.exodusprivacy.manager.storage.ExodusConfig
-import org.eu.exodus_privacy.exodusprivacy.manager.storage.ExodusDataStoreRepository
+import org.eu.exodus_privacy.exodusprivacy.di.DataStoreName
+import org.eu.exodus_privacy.exodusprivacy.data.dataStore.ExodusConfig
+import org.eu.exodus_privacy.exodusprivacy.data.dataStore.ExodusDataStoreRepository
 import org.junit.Rule
 import kotlin.test.BeforeTest
 import kotlin.test.Test

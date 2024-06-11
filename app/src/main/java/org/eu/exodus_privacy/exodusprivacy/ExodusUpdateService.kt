@@ -23,11 +23,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.eu.exodus_privacy.exodusprivacy.manager.database.ExodusDatabaseRepository
-import org.eu.exodus_privacy.exodusprivacy.manager.network.ExodusAPIRepository
-import org.eu.exodus_privacy.exodusprivacy.manager.network.NetworkManager
-import org.eu.exodus_privacy.exodusprivacy.manager.packageinfo.ExodusPackageRepository
-import org.eu.exodus_privacy.exodusprivacy.manager.sync.SyncManager
+import org.eu.exodus_privacy.exodusprivacy.data.database.ExodusDatabaseRepository
+import org.eu.exodus_privacy.exodusprivacy.data.remote.ExodusAPIRepository
+import org.eu.exodus_privacy.exodusprivacy.data.manager.NetworkManager
+import org.eu.exodus_privacy.exodusprivacy.data.manager.PackageInfoManager
+import org.eu.exodus_privacy.exodusprivacy.data.manager.SyncManager
+import org.eu.exodus_privacy.exodusprivacy.ui.MainActivity
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -55,7 +56,7 @@ class ExodusUpdateService : LifecycleService() {
     lateinit var syncManager: SyncManager
 
     @Inject
-    lateinit var exodusPackageRepository: ExodusPackageRepository
+    lateinit var packageInfoManager: PackageInfoManager
 
     @Inject
     lateinit var exodusAPIRepository: ExodusAPIRepository
@@ -122,7 +123,7 @@ class ExodusUpdateService : LifecycleService() {
     private fun launchFetch(firstTime: Boolean) {
         // create list of installed packages, that are system apps or launchable
 
-        val numberOfInstalledPackages = exodusPackageRepository.getValidPackageList().size
+        val numberOfInstalledPackages = packageInfoManager.getValidPackageList().size
 
         if (networkConnected) {
             IS_SERVICE_RUNNING = true

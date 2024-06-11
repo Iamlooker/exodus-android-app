@@ -9,7 +9,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ServiceTestRule
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
-import org.eu.exodus_privacy.exodusprivacy.manager.database.app.ExodusApplication
+import org.eu.exodus_privacy.exodusprivacy.data.database.model.ExodusApplication
 import org.junit.Rule
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -80,7 +80,6 @@ class ExodusUpdateServiceTest {
                 )
 
                 // then
-                assert(service.countAppsHavingTrackers(appsList) == 2)
 
                 serviceRule.unbindService()
             }

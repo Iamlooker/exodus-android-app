@@ -8,7 +8,7 @@ import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.platform.app.InstrumentationRegistry
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
-import org.eu.exodus_privacy.exodusprivacy.manager.database.ExodusDatabase
+import org.eu.exodus_privacy.exodusprivacy.data.database.ExodusDatabase
 import org.junit.Rule
 import java.io.IOException
 import kotlin.test.Test

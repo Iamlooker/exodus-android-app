@@ -15,9 +15,9 @@ import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
-import org.eu.exodus_privacy.exodusprivacy.manager.network.ExodusAPIInterface
-import org.eu.exodus_privacy.exodusprivacy.manager.network.ExodusAPIRepository
-import org.eu.exodus_privacy.exodusprivacy.manager.network.ExodusModule
+import org.eu.exodus_privacy.exodusprivacy.data.remote.ExodusAPIInterface
+import org.eu.exodus_privacy.exodusprivacy.data.remote.ExodusAPIRepository
+import org.eu.exodus_privacy.exodusprivacy.di.ExodusModule
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import retrofit2.Retrofit
