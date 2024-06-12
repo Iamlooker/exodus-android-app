@@ -8,10 +8,6 @@ import retrofit2.http.Path
 
 interface ExodusAPIInterface {
 
-    companion object {
-        const val BASE_URL = "https://reports.exodus-privacy.eu.org/api/"
-    }
-
     @GET("trackers")
     suspend fun getAllTrackers(): Response<Trackers>
 
@@ -19,4 +15,8 @@ interface ExodusAPIInterface {
     suspend fun getAppDetails(
         @Path("packageName") packageName: String,
     ): Response<List<AppDetails>>
+
+    companion object {
+        const val BASE_URL = "https://reports.exodus-privacy.eu.org/api/"
+    }
 }

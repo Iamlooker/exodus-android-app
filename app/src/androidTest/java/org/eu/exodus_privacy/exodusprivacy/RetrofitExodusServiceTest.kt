@@ -16,7 +16,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
 import org.eu.exodus_privacy.exodusprivacy.data.remote.ExodusAPIInterface
-import org.eu.exodus_privacy.exodusprivacy.data.remote.ExodusAPIRepository
+import org.eu.exodus_privacy.exodusprivacy.data.remote.ExodusService
 import org.eu.exodus_privacy.exodusprivacy.di.ExodusModule
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -87,7 +87,7 @@ object FakeExodusModule {
 }
 
 @HiltAndroidTest
-class ExodusAPIRepositoryTest {
+class RetrofitExodusServiceTest {
     @get:Rule
     val hiltRule = HiltAndroidRule(this)
 
@@ -96,7 +96,7 @@ class ExodusAPIRepositoryTest {
     private val testDispatcher = StandardTestDispatcher()
 
     @Inject
-    lateinit var exodusAPIRepository: ExodusAPIRepository
+    lateinit var retrofitExodusService: ExodusService
     private lateinit var context: Context
 
     @BeforeTest
@@ -126,7 +126,7 @@ class ExodusAPIRepositoryTest {
         // then
         val exception =
             try {
-                exodusAPIRepository.getAllTrackers()
+                retrofitExodusService.getAllTrackers()
             } catch (
                 exception: java.net.SocketTimeoutException,
             ) {

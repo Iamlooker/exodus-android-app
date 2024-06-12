@@ -1,4 +1,4 @@
-package org.eu.exodus_privacy.exodusprivacy.data.manager
+package org.eu.exodus_privacy.exodusprivacy.core.packageInfo
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
@@ -17,12 +17,12 @@ import org.eu.exodus_privacy.exodusprivacy.utils.getInstalledPackagesList
 import org.eu.exodus_privacy.exodusprivacy.utils.getSource
 import javax.inject.Inject
 
-class PackageInfoManager @Inject constructor(
+class AndroidPackageInfoManager @Inject constructor(
     private val packageManager: PackageManager,
     @IoDispatcher val ioDispatcher: CoroutineDispatcher,
-) {
+) : PackageInfoManager {
 
-    suspend fun getApplicationList(
+    override suspend fun getApplicationList(
         validPackages: List<PackageInfo>,
     ): List<Application> {
         val permissionsMap = generatePermissionsMap(validPackages, packageManager)
@@ -46,7 +46,7 @@ class PackageInfoManager @Inject constructor(
         return applicationList
     }
 
-    fun getValidPackageList(): List<PackageInfo> {
+    override fun getValidPackageList(): List<PackageInfo> {
         val packageList = packageManager.getInstalledPackagesList(PackageManager.GET_PERMISSIONS)
         val validPackages = mutableListOf<PackageInfo>()
         packageList.forEach { pkgInfo ->
@@ -57,10 +57,10 @@ class PackageInfoManager @Inject constructor(
         return validPackages
     }
 
-    suspend fun generatePermissionsMap(
+    override suspend fun generatePermissionsMap(
         packages: List<PackageInfo>,
         packageManager: PackageManager,
-    ): MutableMap<String, List<Permission>> {
+    ): Map<String, List<Permission>> {
         return withContext(ioDispatcher) {
             val packagesWithPermissions = packages.filterNot { it.requestedPermissions == null }
             Log.d(TAG, "Packages with perms: $packagesWithPermissions")
@@ -147,7 +147,7 @@ class PackageInfoManager @Inject constructor(
     }
 
     private companion object {
-        const val TAG = "ExodusPackageRepository"
+        const val TAG = "AndroidPackageInfoManager"
         const val GOOGLE_PLAY_STORE = "com.android.vending"
         const val AURORA_STORE = "com.aurora.store"
         const val FDROID = "org.fdroid.fdroid"

@@ -1,4 +1,4 @@
-package org.eu.exodus_privacy.exodusprivacy.data.manager
+package org.eu.exodus_privacy.exodusprivacy.core.network
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -8,22 +8,25 @@ import android.net.NetworkRequest
 import android.util.Log
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.withContext
 import org.eu.exodus_privacy.exodusprivacy.data.remote.ExodusAPIInterface
+import org.eu.exodus_privacy.exodusprivacy.utils.IoDispatcher
 import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NetworkManager @Inject constructor(
+class AndroidNetworkManager @Inject constructor(
     @ApplicationContext private val context: Context,
-) {
-    private val TAG = NetworkManager::class.java.simpleName
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+) : NetworkManager {
 
-    val isOnline: Flow<Boolean> = callbackFlow {
+    override val isOnline: Flow<Boolean> = callbackFlow {
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 Log.d(TAG, "Network available.")
@@ -53,15 +56,17 @@ class NetworkManager @Inject constructor(
         }
     }.conflate()
 
-    fun isExodusReachable(): Boolean {
-        return try {
-            URL(ExodusAPIInterface.BASE_URL)
-                .openConnection()
-                .connect()
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "Could Not Reach Exodus API URL.", e)
-            false
+    override suspend fun isExodusReachable(): Boolean {
+        return withContext(ioDispatcher) {
+            try {
+                URL(ExodusAPIInterface.BASE_URL)
+                    .openConnection()
+                    .connect()
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Could Not Reach Exodus API URL.", e)
+                false
+            }
         }
     }
 
@@ -72,5 +77,9 @@ class NetworkManager @Inject constructor(
                 ?.let(::getNetworkCapabilities)
                 ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 ?: false
+    }
+
+    private companion object {
+        const val TAG = "AndroidNetworkManager"
     }
 }

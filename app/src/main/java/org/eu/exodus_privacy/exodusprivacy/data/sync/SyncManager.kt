@@ -1,4 +1,4 @@
-package org.eu.exodus_privacy.exodusprivacy.data.manager
+package org.eu.exodus_privacy.exodusprivacy.data.sync
 
 import android.util.Log
 import kotlinx.coroutines.CoroutineDispatcher
@@ -12,12 +12,13 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import okio.IOException
+import org.eu.exodus_privacy.exodusprivacy.core.packageInfo.PackageInfoManager
 import org.eu.exodus_privacy.exodusprivacy.data.database.ExodusDatabaseRepository
 import org.eu.exodus_privacy.exodusprivacy.data.database.model.ExodusApplication
 import org.eu.exodus_privacy.exodusprivacy.data.database.model.TrackerData
-import org.eu.exodus_privacy.exodusprivacy.data.remote.ExodusAPIRepository
-import org.eu.exodus_privacy.exodusprivacy.data.remote.model.AppDetails
 import org.eu.exodus_privacy.exodusprivacy.data.model.Application
+import org.eu.exodus_privacy.exodusprivacy.data.remote.ExodusService
+import org.eu.exodus_privacy.exodusprivacy.data.remote.model.AppDetails
 import org.eu.exodus_privacy.exodusprivacy.utils.IoDispatcher
 import org.eu.exodus_privacy.exodusprivacy.utils.propagateCancellation
 import org.eu.exodus_privacy.exodusprivacy.utils.updateAndGet
@@ -28,7 +29,7 @@ import javax.inject.Singleton
 @Singleton
 class SyncManager @Inject constructor(
     private val databaseRepository: ExodusDatabaseRepository,
-    private val apiRepository: ExodusAPIRepository,
+    private val apiRepository: ExodusService,
     private val packageRepository: PackageInfoManager,
     @IoDispatcher val ioDispatcher: CoroutineDispatcher,
 ) {

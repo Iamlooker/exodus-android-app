@@ -23,11 +23,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.eu.exodus_privacy.exodusprivacy.core.network.NetworkManager
+import org.eu.exodus_privacy.exodusprivacy.core.packageInfo.PackageInfoManager
 import org.eu.exodus_privacy.exodusprivacy.data.database.ExodusDatabaseRepository
-import org.eu.exodus_privacy.exodusprivacy.data.remote.ExodusAPIRepository
-import org.eu.exodus_privacy.exodusprivacy.data.manager.NetworkManager
-import org.eu.exodus_privacy.exodusprivacy.data.manager.PackageInfoManager
-import org.eu.exodus_privacy.exodusprivacy.data.manager.SyncManager
+import org.eu.exodus_privacy.exodusprivacy.data.remote.ExodusService
+import org.eu.exodus_privacy.exodusprivacy.data.sync.SyncManager
 import org.eu.exodus_privacy.exodusprivacy.ui.MainActivity
 import javax.inject.Inject
 
@@ -59,7 +59,7 @@ class ExodusUpdateService : LifecycleService() {
     lateinit var packageInfoManager: PackageInfoManager
 
     @Inject
-    lateinit var exodusAPIRepository: ExodusAPIRepository
+    lateinit var retrofitExodusService: ExodusService
 
     @Inject
     lateinit var exodusDatabaseRepository: ExodusDatabaseRepository
@@ -90,10 +90,12 @@ class ExodusUpdateService : LifecycleService() {
 
     // Allow binding to exodus update service
     private val binder = LocalBinder()
+
     inner class LocalBinder : Binder() {
         // Return this instance of LocalService so clients can call public methods
         fun getService(): ExodusUpdateService = this@ExodusUpdateService
     }
+
     override fun onBind(intent: Intent): IBinder {
         super.onBind(intent)
         return binder
@@ -106,12 +108,15 @@ class ExodusUpdateService : LifecycleService() {
                 FIRST_TIME_START_SERVICE -> {
                     launchFetch(true)
                 }
+
                 START_SERVICE -> {
                     launchFetch(false)
                 }
+
                 STOP_SERVICE -> {
                     stopService()
                 }
+
                 else -> {
                     Log.w(TAG, "Got an unhandled action: ${it.action}.")
                 }

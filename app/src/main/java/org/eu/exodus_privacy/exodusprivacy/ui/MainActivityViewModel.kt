@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import org.eu.exodus_privacy.exodusprivacy.data.manager.NetworkManager
+import org.eu.exodus_privacy.exodusprivacy.core.network.NetworkManager
 import org.eu.exodus_privacy.exodusprivacy.data.dataStore.ExodusConfig
 import org.eu.exodus_privacy.exodusprivacy.data.dataStore.ExodusDataStoreRepository
 import javax.inject.Inject

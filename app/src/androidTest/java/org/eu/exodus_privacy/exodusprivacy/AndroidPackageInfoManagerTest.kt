@@ -9,14 +9,14 @@ import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.eu.exodus_privacy.exodusprivacy.data.manager.PackageInfoManager
+import org.eu.exodus_privacy.exodusprivacy.core.packageInfo.PackageInfoManager
 import org.eu.exodus_privacy.exodusprivacy.utils.getInstalledPackagesList
 import org.junit.Rule
 import javax.inject.Inject
 import kotlin.test.Test
 
 @HiltAndroidTest
-class PackageInfoManagerTest {
+class AndroidPackageInfoManagerTest {
     @get:Rule
     val hiltRule = HiltAndroidRule(this)
 
@@ -131,9 +131,9 @@ class PackageInfoManagerTest {
             }
             val applicationInfoObjectsAreTheSame =
                 appInfo.packageName == comparePkgInfo.packageName &&
-                    appInfo.enabled == comparePkgInfo.enabled &&
-                    appInfo.flags == comparePkgInfo.flags &&
-                    appInfo.icon == comparePkgInfo.icon
+                        appInfo.enabled == comparePkgInfo.enabled &&
+                        appInfo.flags == comparePkgInfo.flags &&
+                        appInfo.icon == comparePkgInfo.icon
 
             // then
             assert(applicationInfoObjectsAreTheSame)
