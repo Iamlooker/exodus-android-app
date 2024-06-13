@@ -12,6 +12,7 @@ import kotlinx.coroutines.withContext
 import org.eu.exodus_privacy.exodusprivacy.data.model.Application
 import org.eu.exodus_privacy.exodusprivacy.data.model.Permission
 import org.eu.exodus_privacy.exodusprivacy.data.model.Source
+import org.eu.exodus_privacy.exodusprivacy.utils.DefaultDispatcher
 import org.eu.exodus_privacy.exodusprivacy.utils.IoDispatcher
 import org.eu.exodus_privacy.exodusprivacy.utils.getInstalledPackagesList
 import org.eu.exodus_privacy.exodusprivacy.utils.getSource
@@ -20,6 +21,7 @@ import javax.inject.Inject
 class AndroidPackageInfoManager @Inject constructor(
     private val packageManager: PackageManager,
     @IoDispatcher val ioDispatcher: CoroutineDispatcher,
+    @DefaultDispatcher val defaultDispatcher: CoroutineDispatcher,
 ) : PackageInfoManager {
 
     override suspend fun getApplicationList(
@@ -47,21 +49,16 @@ class AndroidPackageInfoManager @Inject constructor(
     }
 
     override fun getValidPackageList(): List<PackageInfo> {
-        val packageList = packageManager.getInstalledPackagesList(PackageManager.GET_PERMISSIONS)
-        val validPackages = mutableListOf<PackageInfo>()
-        packageList.forEach { pkgInfo ->
-            if (validPackage(pkgInfo, packageManager)) {
-                validPackages.add(pkgInfo)
-            }
-        }
-        return validPackages
+        val packageList = packageManager
+            .getInstalledPackagesList(PackageManager.GET_PERMISSIONS)
+        return packageList.filter { validPackage(it, packageManager) }
     }
 
     override suspend fun generatePermissionsMap(
         packages: List<PackageInfo>,
         packageManager: PackageManager,
     ): Map<String, List<Permission>> {
-        return withContext(ioDispatcher) {
+        return withContext(defaultDispatcher) {
             val packagesWithPermissions = packages.filterNot { it.requestedPermissions == null }
             Log.d(TAG, "Packages with perms: $packagesWithPermissions")
             val permissionInfoSet = packagesWithPermissions.fold(
@@ -77,11 +74,7 @@ class AndroidPackageInfoManager @Inject constructor(
             var permissionList = permissionInfoSet.map { permissionName ->
                 generatePermission(permissionName, packageManager)
             }
-            permissionList = permissionList.sortedWith(
-                compareBy(String.CASE_INSENSITIVE_ORDER) {
-                    it.shortName
-                },
-            )
+            permissionList = permissionList.sortedWith(PermissionComparator)
             Log.d(TAG, "Permission List: $permissionList")
             packagesWithPermissions.forEach { packageInfo ->
                 permissionMap[packageInfo.packageName] = permissionList.filter { perm ->
@@ -94,31 +87,37 @@ class AndroidPackageInfoManager @Inject constructor(
         }
     }
 
-    private fun generatePermission(longName: String, packageManager: PackageManager): Permission {
-        var permInfo: PermissionInfo? = null
-        try {
-            permInfo = packageManager.getPermissionInfo(
-                longName,
-                PackageManager.GET_META_DATA,
-            )
-        } catch (exception: PackageManager.NameNotFoundException) {
-            Log.d(TAG, "Unable to find info about $longName.")
-        }
-        var shortName = longName.substringAfterLast('.')
-        if (shortName.matches("[a-z].".toRegex())) { // we may
-            shortName = longName.replace("[^>]*[a-z][.]".toRegex(), "")
-        }
-        permInfo?.loadLabel(packageManager)?.let { label ->
-            return Permission(
-                shortName,
-                longName,
-                label.toString(),
-            )
-        } ?: run {
-            return Permission(
-                shortName,
-                longName,
-                longName,
+    private suspend fun generatePermission(
+        longName: String,
+        packageManager: PackageManager,
+    ): Permission {
+        return withContext(defaultDispatcher) {
+            val shortName = longName
+                .substringAfterLast('.')
+                .run {
+                    if (matches("[a-z].".toRegex())) { // we may
+                        longName.replace("[^>]*[a-z][.]".toRegex(), "")
+                    } else {
+                        this
+                    }
+                }
+            val permInfo: PermissionInfo = try {
+                packageManager.getPermissionInfo(
+                    longName,
+                    PackageManager.GET_META_DATA,
+                )
+            } catch (exception: PackageManager.NameNotFoundException) {
+                Log.d(TAG, "Unable to find info about $longName.")
+                return@withContext Permission(
+                    shortName = shortName,
+                    longName = longName,
+                    label = longName,
+                )
+            }
+            Permission(
+                shortName = shortName,
+                longName = longName,
+                label = permInfo.loadLabel(packageManager).toString(),
             )
         }
     }
@@ -153,5 +152,9 @@ class AndroidPackageInfoManager @Inject constructor(
         const val FDROID = "org.fdroid.fdroid"
         val SYSTEM: String? = null
         const val ICON_SIZE = 96
+
+        val PermissionComparator = compareBy<Permission, String>(String.CASE_INSENSITIVE_ORDER) {
+            it.shortName
+        }
     }
 }
