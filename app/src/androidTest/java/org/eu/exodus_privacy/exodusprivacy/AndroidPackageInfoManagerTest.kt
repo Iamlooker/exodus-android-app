@@ -57,7 +57,7 @@ class AndroidPackageInfoManagerTest {
 
         // when
         val permissionsMap =
-            packageInfoManager.generatePermissionsMap(packages, packageManager)
+            packageInfoManager.generatePermissionsMap(packages)
 
         // then
         val youtubePackage =

@@ -8,28 +8,31 @@ import android.util.Log
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import org.eu.exodus_privacy.exodusprivacy.data.model.Application
 import org.eu.exodus_privacy.exodusprivacy.data.model.Permission
 import org.eu.exodus_privacy.exodusprivacy.data.model.Source
 import org.eu.exodus_privacy.exodusprivacy.utils.DefaultDispatcher
-import org.eu.exodus_privacy.exodusprivacy.utils.IoDispatcher
 import org.eu.exodus_privacy.exodusprivacy.utils.getInstalledPackagesList
 import org.eu.exodus_privacy.exodusprivacy.utils.getSource
 import javax.inject.Inject
 
 class AndroidPackageInfoManager @Inject constructor(
     private val packageManager: PackageManager,
-    @IoDispatcher val ioDispatcher: CoroutineDispatcher,
     @DefaultDispatcher val defaultDispatcher: CoroutineDispatcher,
 ) : PackageInfoManager {
 
     override suspend fun getApplicationList(
         validPackages: List<PackageInfo>,
     ): List<Application> {
-        val permissionsMap = generatePermissionsMap(validPackages, packageManager)
-        val applicationList = mutableListOf<Application>()
-        validPackages.forEach { packageInfo ->
+        val permissionsMap = generatePermissionsMap(validPackages.filterWithPermissions())
+        return validPackages.map { packageInfo ->
+            yield()
             Log.d(TAG, "Found package: ${packageInfo.packageName}.")
             val app = Application(
                 name = packageInfo.applicationInfo.loadLabel(packageManager).toString(),
@@ -39,59 +42,40 @@ class AndroidPackageInfoManager @Inject constructor(
                 versionName = packageInfo.versionName ?: "",
                 versionCode = PackageInfoCompat.getLongVersionCode(packageInfo),
                 permissions = permissionsMap[packageInfo.packageName] ?: emptyList(),
-                source = getAppStore(packageInfo.packageName, packageManager),
+                source = packageInfo.packageName.getAppStore(),
             )
             Log.d(TAG, "Add app: ${app.name}, ${app.versionName}")
-            applicationList.add(app)
-        }
-        applicationList.sortBy { it.name }
-        return applicationList
+            app
+        }.sortedBy { it.name }
     }
 
     override fun getValidPackageList(): List<PackageInfo> {
         val packageList = packageManager
             .getInstalledPackagesList(PackageManager.GET_PERMISSIONS)
-        return packageList.filter { validPackage(it, packageManager) }
+        return packageList.filter(::validPackage)
     }
 
     override suspend fun generatePermissionsMap(
         packages: List<PackageInfo>,
-        packageManager: PackageManager,
     ): Map<String, List<Permission>> {
         return withContext(defaultDispatcher) {
-            val packagesWithPermissions = packages.filterNot { it.requestedPermissions == null }
-            Log.d(TAG, "Packages with perms: $packagesWithPermissions")
-            val permissionInfoSet = packagesWithPermissions.fold(
-                hashSetOf<String>(),
-            ) { acc, next ->
-                if (next.requestedPermissions != null) {
-                    acc.addAll(next.requestedPermissions)
+            val permissionDeferredSet = hashSetOf<Deferred<Pair<String, List<Permission>>>>()
+            packages.forEach { info ->
+                val packageNameToPermissions = async {
+                    info.packageName to
+                            (info.requestedPermissions?.map { generatePermission(it) } ?: emptyList())
                 }
-                acc
+                permissionDeferredSet.add(packageNameToPermissions)
             }
-            Log.d(TAG, "Permission Info Set: $permissionInfoSet")
-            val permissionMap = hashMapOf<String, List<Permission>>()
-            var permissionList = permissionInfoSet.map { permissionName ->
-                generatePermission(permissionName, packageManager)
-            }
-            permissionList = permissionList.sortedWith(PermissionComparator)
-            Log.d(TAG, "Permission List: $permissionList")
-            packagesWithPermissions.forEach { packageInfo ->
-                permissionMap[packageInfo.packageName] = permissionList.filter { perm ->
-                    packageInfo.requestedPermissions.any { reqPerm ->
-                        reqPerm == perm.longName
-                    }
-                }
-            }
-            return@withContext permissionMap
+            permissionDeferredSet.awaitAll().toMap()
         }
     }
 
     private suspend fun generatePermission(
         longName: String,
-        packageManager: PackageManager,
     ): Permission {
         return withContext(defaultDispatcher) {
+            ensureActive()
             val shortName = longName
                 .substringAfterLast('.')
                 .run {
@@ -122,9 +106,9 @@ class AndroidPackageInfoManager @Inject constructor(
         }
     }
 
-    private fun getAppStore(packageName: String, packageManager: PackageManager): Source {
-        val appStore = packageManager.getSource(packageName)
-        Log.d(TAG, "Found AppStore: $appStore for app: $packageName.")
+    private fun String.getAppStore(): Source {
+        val appStore = packageManager.getSource(this)
+        Log.d(TAG, "Found AppStore: $appStore for app: ${this}.")
         return when (appStore) {
             GOOGLE_PLAY_STORE -> Source.GOOGLE
             AURORA_STORE -> Source.GOOGLE
@@ -134,16 +118,21 @@ class AndroidPackageInfoManager @Inject constructor(
         }
     }
 
-    private fun validPackage(packageInfo: PackageInfo, packageManager: PackageManager): Boolean {
+    private fun validPackage(
+        packageInfo: PackageInfo,
+    ): Boolean {
         val appInfo = packageInfo.applicationInfo
         val packageName = packageInfo.packageName
         return (
-            appInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0 ||
-                appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0 ||
-                packageManager.getLaunchIntentForPackage(packageName) != null
-            ) &&
-            appInfo.enabled
+                appInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0 ||
+                        appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0 ||
+                        packageManager.getLaunchIntentForPackage(packageName) != null
+                ) &&
+                appInfo.enabled
     }
+
+    private fun List<PackageInfo>.filterWithPermissions(): List<PackageInfo> =
+        filterNot { it.requestedPermissions == null }
 
     private companion object {
         const val TAG = "AndroidPackageInfoManager"
