@@ -128,7 +128,7 @@ class ExodusUpdateService : LifecycleService() {
     private fun launchFetch(firstTime: Boolean) {
         // create list of installed packages, that are system apps or launchable
 
-        val numberOfInstalledPackages = packageInfoManager.getValidPackageList().size
+        val numberOfInstalledPackages = packageInfoManager.validPackages
 
         if (networkConnected) {
             IS_SERVICE_RUNNING = true

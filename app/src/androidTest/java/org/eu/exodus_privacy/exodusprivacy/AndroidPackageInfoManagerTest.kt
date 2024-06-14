@@ -36,8 +36,8 @@ class AndroidPackageInfoManagerTest {
         hiltRule.inject()
 
         // when
-        val valid = packageInfoManager.getValidPackageList()
-        val appList = packageInfoManager.getApplicationList(valid)
+        val valid = packageInfoManager.getValidPackages()
+        val appList = packageInfoManager.getApplications(valid)
 
         // then
         appList.forEach {
@@ -53,11 +53,11 @@ class AndroidPackageInfoManagerTest {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val packageManager = context.packageManager
         val packages = packageManager.getInstalledPackagesList(PackageManager.GET_PERMISSIONS)
-        val packagesWithPermissions = packages.filterNot { it.requestedPermissions == null }
+        val packagesWithPermissions = packageInfoManager.getValidPackages()
 
         // when
         val permissionsMap =
-            packageInfoManager.generatePermissionsMap(packages)
+            packageInfoManager.generatePermissionsMap(packagesWithPermissions)
 
         // then
         val youtubePackage =
@@ -85,8 +85,8 @@ class AndroidPackageInfoManagerTest {
             installedApps.filterNot { it.requestedPermissions == null }
 
         // when
-        val valid = packageInfoManager.getValidPackageList()
-        val appList = packageInfoManager.getApplicationList(valid)
+        val valid = packageInfoManager.getValidPackages()
+        val appList = packageInfoManager.getApplications(valid)
         val appsWithPermissions = appList.filter { it.permissions.isNotEmpty() }
 
         // then

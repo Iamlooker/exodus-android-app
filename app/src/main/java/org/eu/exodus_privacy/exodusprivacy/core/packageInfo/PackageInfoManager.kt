@@ -1,19 +1,30 @@
 package org.eu.exodus_privacy.exodusprivacy.core.packageInfo
 
-import android.content.pm.PackageInfo
+import android.graphics.Bitmap
 import org.eu.exodus_privacy.exodusprivacy.data.model.Application
 import org.eu.exodus_privacy.exodusprivacy.data.model.Permission
 
 interface PackageInfoManager {
 
-    suspend fun getApplicationList(
-        validPackages: List<PackageInfo>,
+    val validPackages: Int
+
+    suspend fun getApplications(
+        validPackages: List<ExodusPackageInfo>,
     ): List<Application>
 
-    fun getValidPackageList(): List<PackageInfo>
+    fun getValidPackages(): List<ExodusPackageInfo>
 
     suspend fun generatePermissionsMap(
-        packages: List<PackageInfo>,
+        packages: List<ExodusPackageInfo>,
     ): Map<String, List<Permission>>
 
 }
+
+data class ExodusPackageInfo(
+    val packageName: String,
+    val requestedPermissions: List<String>,
+    val versionCode: Long,
+    val versionName: String,
+    val name: String,
+    val icon: Bitmap,
+)

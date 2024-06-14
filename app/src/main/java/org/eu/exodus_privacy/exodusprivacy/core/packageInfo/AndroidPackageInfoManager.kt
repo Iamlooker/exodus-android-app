@@ -27,20 +27,22 @@ class AndroidPackageInfoManager @Inject constructor(
     @DefaultDispatcher val defaultDispatcher: CoroutineDispatcher,
 ) : PackageInfoManager {
 
-    override suspend fun getApplicationList(
-        validPackages: List<PackageInfo>,
+    override val validPackages: Int
+        get() = getValidPackages().size
+
+    override suspend fun getApplications(
+        validPackages: List<ExodusPackageInfo>,
     ): List<Application> {
         val permissionsMap = generatePermissionsMap(validPackages.filterWithPermissions())
         return validPackages.map { packageInfo ->
             yield()
             Log.d(TAG, "Found package: ${packageInfo.packageName}.")
             val app = Application(
-                name = packageInfo.applicationInfo.loadLabel(packageManager).toString(),
+                name = packageInfo.name,
                 packageName = packageInfo.packageName,
-                icon = packageInfo.applicationInfo.loadIcon(packageManager)
-                    .toBitmap(ICON_SIZE, ICON_SIZE),
-                versionName = packageInfo.versionName ?: "",
-                versionCode = PackageInfoCompat.getLongVersionCode(packageInfo),
+                icon = packageInfo.icon,
+                versionName = packageInfo.versionName,
+                versionCode = packageInfo.versionCode,
                 permissions = permissionsMap[packageInfo.packageName] ?: emptyList(),
                 source = packageInfo.packageName.getAppStore(),
             )
@@ -49,21 +51,22 @@ class AndroidPackageInfoManager @Inject constructor(
         }.sortedBy { it.name }
     }
 
-    override fun getValidPackageList(): List<PackageInfo> {
+    override fun getValidPackages(): List<ExodusPackageInfo> {
         val packageList = packageManager
             .getInstalledPackagesList(PackageManager.GET_PERMISSIONS)
-        return packageList.filter(::validPackage)
+        return packageList
+            .filter(::validPackage)
+            .mapToExodusInfo()
     }
 
     override suspend fun generatePermissionsMap(
-        packages: List<PackageInfo>,
+        packages: List<ExodusPackageInfo>,
     ): Map<String, List<Permission>> {
         return withContext(defaultDispatcher) {
             val permissionDeferredSet = hashSetOf<Deferred<Pair<String, List<Permission>>>>()
             packages.forEach { info ->
                 val packageNameToPermissions = async {
-                    info.packageName to
-                            (info.requestedPermissions?.map { generatePermission(it) } ?: emptyList())
+                    info.packageName to info.requestedPermissions.map { generatePermission(it) }
                 }
                 permissionDeferredSet.add(packageNameToPermissions)
             }
@@ -131,8 +134,20 @@ class AndroidPackageInfoManager @Inject constructor(
                 appInfo.enabled
     }
 
-    private fun List<PackageInfo>.filterWithPermissions(): List<PackageInfo> =
-        filterNot { it.requestedPermissions == null }
+    private fun List<ExodusPackageInfo>.filterWithPermissions(): List<ExodusPackageInfo> =
+        filter { it.requestedPermissions.isNotEmpty() }
+
+    private fun List<PackageInfo>.mapToExodusInfo(): List<ExodusPackageInfo> =
+        map {
+            ExodusPackageInfo(
+                packageName = it.packageName,
+                requestedPermissions = it.requestedPermissions?.toList() ?: emptyList(),
+                versionCode = PackageInfoCompat.getLongVersionCode(it),
+                versionName = it.versionName ?: "",
+                name = it.applicationInfo.loadLabel(packageManager).toString(),
+                icon = it.applicationInfo.loadIcon(packageManager).toBitmap(ICON_SIZE, ICON_SIZE),
+            )
+        }
 
     private companion object {
         const val TAG = "AndroidPackageInfoManager"

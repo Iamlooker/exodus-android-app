@@ -63,8 +63,8 @@ class SyncManager @Inject constructor(
         onAppSync: suspend (appDetail: AppDetails) -> Unit,
     ) {
         withContext(ioDispatcher) {
-            val validPackages = packageRepository.getValidPackageList()
-            val currentAppList = packageRepository.getApplicationList(validPackages)
+            val validPackages = packageRepository.getValidPackages()
+            val currentAppList = packageRepository.getApplications(validPackages)
             val syncedApps = mutableListOf<ExodusApplication>()
 
             launch {
